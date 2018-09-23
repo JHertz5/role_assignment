@@ -15,10 +15,10 @@ infile_name = sys.argv[1]
 
 #extract, process and check csv data
 grads, roles, cost_matrix = processing.extract_csv_data(infile_name)
-processing.check_cost_matrix_validity(cost_matrix,grads) # raises error if problem discovered
+# processing.check_cost_matrix_validity(cost_matrix,grads) # raises error if problem discovered
 
 # perform assignment
-print(cost_matrix)
+# print(cost_matrix)
 from scipy.optimize import linear_sum_assignment
 grad_idx,role_idx = linear_sum_assignment(cost_matrix)
 
