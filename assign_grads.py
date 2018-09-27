@@ -8,10 +8,19 @@ import numpy as np # for ndarray type
 import processing
 
 # csv filename input required as command line argument 1
-if len(sys.argv) != 2:
-    print('ERROR: no input file provided')
+if len(sys.argv) < 2:
+    infile_name = '' # FILL IN FILENAME BETWEEN ""!!!
+    if infile_name == '':
+        print('ERROR: no input file provided\n\t(set filename either in code or give as command line argument)')
+        sys.exit()
+else:
+    infile_name = sys.argv[1]
+
+if infile_name[-4:] != '.csv':
+    print('ERROR: input must be .csv file')
     sys.exit()
-infile_name = sys.argv[1]
+
+print('\treading {}'.format(infile_name))
 
 #extract, process and check csv data
 grads, roles, cost_matrix = processing.extract_csv_data(infile_name)
