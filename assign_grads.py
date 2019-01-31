@@ -3,32 +3,32 @@ program for assigning graduates to roles using the Hungarian algorithm
 """
 # Author: Jukka Hertzog
 
+#TODO Randomise input order
+#TODO handle error with file open
+#TODO list how many of each choice were selected
+#TODO change input path to fixed and in folder
+#TODO list other choices and comments
+#TODO possible to get unselected roles as well?
+#TODO check matrix validity
+
 import sys # for reading CLI arguments
-import numpy as np # for ndarray type
 import processing
+from scipy.optimize import linear_sum_assignment
 
-# csv filename input required as command line argument 1
-if len(sys.argv) < 2:
-    infile_name = '' # FILL IN FILENAME BETWEEN ""!!!
-    if infile_name == '':
-        print('ERROR: no input file provided\n\t(set filename either in code or give as command line argument)')
-        sys.exit()
-else:
-    infile_name = sys.argv[1]
+table_filename = 'input.csv'
+matrix_filename = 'matrix.csv'
+result_filename = 'grad_assignments.csv'
 
-if infile_name[-4:] != '.csv':
-    print('ERROR: input must be .csv file')
-    sys.exit()
+# process raw input data and generate matrix file
+roleList, gradPreferences = processing.extract_table_csv_data('test_raw.csv')
+processing.generate_matrix_csv(roleList, gradPreferences, matrix_filename)
 
-print('\treading {}'.format(infile_name))
-
-#extract, process and check csv data
-grads, roles, cost_matrix = processing.extract_csv_data(infile_name)
-# processing.check_cost_matrix_validity(cost_matrix,grads) # raises error if problem discovered
+# process matrix file and extract data
+grads, roles, cost_matrix = processing.extract_matrix_csv_data(matrix_filename)
 
 # perform assignment
 # print(cost_matrix)
-from scipy.optimize import linear_sum_assignment
+
 grad_idx,role_idx = linear_sum_assignment(cost_matrix)
 
 assigned_roles,unassigned_roles = processing.process_assignment_results(
@@ -37,6 +37,5 @@ assigned_roles,unassigned_roles = processing.process_assignment_results(
     roles,role_idx)
 
 # generate output file
-outfile_name = 'grad_assignments.csv'
-processing.generate_result_csv(outfile_name, assigned_roles,unassigned_roles)
-print('{} generated'.format(outfile_name))
+processing.generate_result_csv(result_filename, assigned_roles,unassigned_roles)
+print('{} generated'.format(result_filename))

@@ -4,19 +4,77 @@
 import csv
 import numpy as np
 
-def extract_csv_data(infile_name):
+def extract_table_csv_data(table_filename):
     """
-    read input csv file
-    Split data into grads (column1[1:]), roles (row1[1:]) and cost_matrix
-    Return grads, roles, cost_matrix
-
-    :param infile_name: filename of input csv file
+    read table csv file
+    extract role list and role preference information for each grad
     """
+    print('reading {}'.format(table_filename))
+    with open(table_filename,newline='') as csvfile:
+        table_reader = csv.reader(csvfile)
 
-    with open(infile_name,newline='') as csvfile:
-        infile_reader = csv.reader(csvfile)
+        roleSet = set()
 
-        row = next(infile_reader)
+        # get roles from table
+        next(table_reader) # skip first row
+        for row in table_reader:
+            if row[0] != '':
+                for roleColumn in [1, 3, 5]: # pick from columns with roles listed
+                    roleSet.add(row[roleColumn])
+        roleList = list(roleSet)
+        roleList.sort()
+
+        # reset table_reader to start of file
+        csvfile.seek(0)
+        table_reader = csv.reader(csvfile)
+
+        next(table_reader) # skip first row
+        gradPreferences = {}
+
+        for row in table_reader:
+            grad = row[0]
+            if grad != '':
+                gradPreferences[grad] = {
+                        'preferences'   : [
+                            roleList.index(row[1]),
+                            roleList.index(row[3]),
+                            roleList.index(row[5])
+                        ],
+                        'comments'      : [row[2], row[4], row[6]]
+                    }
+
+    return roleList, gradPreferences
+
+def generate_matrix_csv(roleList, gradPreferences, matrix_filename):
+    """
+    write grad preference matrix into a csv file
+    """
+    print('generating {}'.format(matrix_filename))
+    with open(matrix_filename,'w',newline='') as csvfile:
+        matrix_writer = csv.writer(csvfile) # open writer
+        matrix_writer.writerow(['3'] + roleList)
+
+        gradList = gradPreferences.keys()
+
+        for grad in gradList:
+            gradRow = [''] * len(roleList)
+            for rank in [0,1,2]:
+                roleColumn = gradPreferences[grad]['preferences'][rank]
+                gradRow[roleColumn] = rank
+            matrix_writer.writerow([grad] + gradRow)
+
+
+
+def extract_matrix_csv_data(matrix_filename):
+    """
+    read matrix csv file
+    split data into grads (column1[1:]), roles (row1[1:]) and cost_matrix
+    """
+    print('reading {}'.format(matrix_filename))
+    with open(matrix_filename,newline='') as csvfile:
+        matrix_reader = csv.reader(csvfile)
+
+        row = next(matrix_reader) # get first row
         roles = row[1:] # get list of roles from first row
         default_cost = int(row[0]) # cost for unspecified roles
         print('\tdefault cost = {}'.format(default_cost))
@@ -24,7 +82,7 @@ def extract_csv_data(infile_name):
 
         cost_matrix_raw = []
 
-        for row in infile_reader:
+        for row in matrix_reader:
             grads.append(row[0])
             cost_matrix_raw.append([default_cost if x is '' else int(x) for x in row[1:]])
 
@@ -36,18 +94,18 @@ def check_cost_matrix_validity(cost_matrix,grads):
     perform checks on cost matrix to provide warnings if:
     - values outside of expected range
     - row duplicates of 0,1,2
-
-    :param cost_matrix:		array of costs for grad/role combinations
     """
 
     for row_index,row in enumerate(cost_matrix):
 
-#        # check for non standard value
-#        for index,cell in enumerate(row):
-#            if cell not in (0,1,2,3): # try range(0,4)
-#                print('WARNING: row {} contains unexpected value {}'.format(grads[row_index],cell))
-        unique,counts = np.unique(row,return_counts=True)
-        row_count = dict(zip(unique,counts))
+       # check for non standard value
+        for index,cell in enumerate(row):
+            if cell not in (0,1,2,3): # try range(0,4)
+               print('WARNING: row {} contains unexpected value {}'.format(grads[row_index],cell))
+
+        #TODO unused?
+        # unique,counts = np.unique(row,return_counts=True)
+        # row_count = dict(zip(unique,counts))
 
         # check for duplicates of 0,1,2 in rows
         for cost in (0,1,2):
@@ -61,14 +119,6 @@ def process_assignment_results(	cost_matrix,
     """
     combine results into list of tuples for easy data access
     also produces list of leftover roles
-
-    :param cost_matrix:		array of costs for grad/role combinations
-    :param grads:			list of grad names
-    :param grad_indexes:	array containing grad indexes
-                                                    corresponding to role_idx
-    :param roles:			list of role names
-    :param role_indexes:	array containing role assignment indexes
-                                                    corresponding to grad_idx
     """
 
     # find assigned grad-role pairs and their associated costs
@@ -83,26 +133,21 @@ def process_assignment_results(	cost_matrix,
 
     return assigned_roles, unassigned_roles
 
-def generate_result_csv(outfile_name, assigned_roles,unassigned_roles):
+def generate_result_csv(result_filename, assigned_roles,unassigned_roles):
     """
     process assignments
     generate results file
-
-    :param outfile_name:	filename of output csv file
-    :param assigned_roles:	dict containing assignment results
-                                    - assigned_roles[grad] = (cost, role)
     """
-
-    with open(outfile_name,'w',newline='') as csvfile:
-        outfile_writer = csv.writer(csvfile) # open writer
-        outfile_writer.writerow(['Grad','Cost','Role'])
+    print('generating {}'.format(result_filename))
+    with open(result_filename,'w',newline='') as csvfile:
+        result_writer = csv.writer(csvfile) # open writer
+        result_writer.writerow(['Grad','Cost','Role'])
 
         # write grad and assigned role to line of csv file for each grad
         for grad in sorted(assigned_roles):
             cost,role = assigned_roles[grad]
-            outfile_writer.writerow([grad,cost,role])
+            result_writer.writerow([grad,cost,role])
 
         # write each unassigned role into line with empty grad and cost field
         for role in unassigned_roles:
-            outfile_writer.writerow(['','',role])
-
+            result_writer.writerow(['','',role])
