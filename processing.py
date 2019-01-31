@@ -9,39 +9,43 @@ def extract_table_csv_data(table_filename):
     read table csv file
     extract role list and role preference information for each grad
     """
-    print('reading {}'.format(table_filename))
-    with open(table_filename,newline='') as csvfile:
-        table_reader = csv.reader(csvfile)
+    print('\treading {}'.format(table_filename))
+    try:
+        csvfile = open(table_filename,newline='')
+    except FileNotFoundError as e:
+        print('Error: {} not found'.format(table_filename))
 
-        roleSet = set()
+    table_reader = csv.reader(csvfile)
 
-        # get roles from table
-        next(table_reader) # skip first row
-        for row in table_reader:
-            if row[0] != '':
-                for roleColumn in [1, 3, 5]: # pick from columns with roles listed
-                    roleSet.add(row[roleColumn])
-        roleList = list(roleSet)
-        roleList.sort()
+    roleSet = set()
 
-        # reset table_reader to start of file
-        csvfile.seek(0)
-        table_reader = csv.reader(csvfile)
+    # get roles from table
+    next(table_reader) # skip first row
+    for row in table_reader:
+        if row[0] != '':
+            for roleColumn in [1, 3, 5]: # pick from columns with roles listed
+                roleSet.add(row[roleColumn])
+    roleList = list(roleSet)
+    roleList.sort()
 
-        next(table_reader) # skip first row
-        gradPreferences = {}
+    # reset table_reader to start of file
+    csvfile.seek(0)
+    table_reader = csv.reader(csvfile)
 
-        for row in table_reader:
-            grad = row[0]
-            if grad != '':
-                gradPreferences[grad] = {
-                        'preferences'   : [
-                            roleList.index(row[1]),
-                            roleList.index(row[3]),
-                            roleList.index(row[5])
-                        ],
-                        'comments'      : [row[2], row[4], row[6]]
-                    }
+    next(table_reader) # skip first row
+    gradPreferences = {}
+
+    for row in table_reader:
+        grad = row[0]
+        if grad != '':
+            gradPreferences[grad] = {
+                    'preferences'   : [
+                        roleList.index(row[1]),
+                        roleList.index(row[3]),
+                        roleList.index(row[5])
+                    ],
+                    'comments'      : [row[2], row[4], row[6]]
+                }
 
     return roleList, gradPreferences
 
@@ -49,7 +53,7 @@ def generate_matrix_csv(roleList, gradPreferences, matrix_filename):
     """
     write grad preference matrix into a csv file
     """
-    print('generating {}'.format(matrix_filename))
+    print('\tgenerating {}'.format(matrix_filename))
     with open(matrix_filename,'w',newline='') as csvfile:
         matrix_writer = csv.writer(csvfile) # open writer
         matrix_writer.writerow(['3'] + roleList)
@@ -70,23 +74,27 @@ def extract_matrix_csv_data(matrix_filename):
     read matrix csv file
     split data into grads (column1[1:]), roles (row1[1:]) and cost_matrix
     """
-    print('reading {}'.format(matrix_filename))
-    with open(matrix_filename,newline='') as csvfile:
-        matrix_reader = csv.reader(csvfile)
+    print('\treading {}'.format(matrix_filename))
+    try:
+        csvfile = open(matrix_filename,newline='')
+    except FileNotFoundError as e:
+        print('ERROR: {} not found'.format(matrix_filename))
 
-        row = next(matrix_reader) # get first row
-        roles = row[1:] # get list of roles from first row
-        default_cost = int(row[0]) # cost for unspecified roles
-        print('\tdefault cost = {}'.format(default_cost))
-        grads = []
+    matrix_reader = csv.reader(csvfile)
 
-        cost_matrix_raw = []
+    row = next(matrix_reader) # get first row
+    roles = row[1:] # get list of roles from first row
+    default_cost = int(row[0]) # cost for unspecified roles
+    print('\tdefault cost = {}'.format(default_cost))
+    grads = []
 
-        for row in matrix_reader:
-            grads.append(row[0])
-            cost_matrix_raw.append([default_cost if x is '' else int(x) for x in row[1:]])
+    cost_matrix_raw = []
 
-        cost_matrix = np.array(cost_matrix_raw) # convert cost_matrix into ndarray
+    for row in matrix_reader:
+        grads.append(row[0])
+        cost_matrix_raw.append([default_cost if x is '' else int(x) for x in row[1:]])
+
+    cost_matrix = np.array(cost_matrix_raw) # convert cost_matrix into ndarray
     return grads,roles,cost_matrix
 
 def check_cost_matrix_validity(cost_matrix,grads):
@@ -103,9 +111,8 @@ def check_cost_matrix_validity(cost_matrix,grads):
             if cell not in (0,1,2,3): # try range(0,4)
                print('WARNING: row {} contains unexpected value {}'.format(grads[row_index],cell))
 
-        #TODO unused?
-        # unique,counts = np.unique(row,return_counts=True)
-        # row_count = dict(zip(unique,counts))
+        unique,counts = np.unique(row,return_counts=True)
+        row_count = dict(zip(unique,counts))
 
         # check for duplicates of 0,1,2 in rows
         for cost in (0,1,2):
@@ -138,7 +145,7 @@ def generate_result_csv(result_filename, assigned_roles,unassigned_roles):
     process assignments
     generate results file
     """
-    print('generating {}'.format(result_filename))
+    print('\tgenerating {}'.format(result_filename))
     with open(result_filename,'w',newline='') as csvfile:
         result_writer = csv.writer(csvfile) # open writer
         result_writer.writerow(['Grad','Cost','Role'])
