@@ -24,50 +24,51 @@ def extract_table_csv_data(table_filename):
     next(table_reader) # skip first row
     for row in table_reader:
         if row[0] != '':
-            for roleColumn in [1, 3, 5]: # pick from columns with roles listed
-                roleSet.add(row[roleColumn])
-    roleList = list(roleSet)
-    roleList.sort()
+            for role_column in [1, 3, 5]: # pick from columns with roles listed
+                roleSet.add(row[role_column])
+    role_list = list(roleSet)
+    role_list.sort()
 
     # reset table_reader to start of file
     csvfile.seek(0)
     table_reader = csv.reader(csvfile)
 
     next(table_reader) # skip first row
-    gradPreferences = {}
+    grad_preferences = {}
 
     for row in table_reader:
         grad = row[0]
         if grad != '':
-            gradPreferences[grad] = {
-                    'preferences'   : [
-                        roleList.index(row[1]),
-                        roleList.index(row[3]),
-                        roleList.index(row[5])
+            grad_preferences[grad] = {
+                    'preference_ids'   : [
+                        role_list.index(row[1]),
+                        role_list.index(row[3]),
+                        role_list.index(row[5])
                     ],
+                    'preferences'   : [row[1], row[3], row[5]],
                     'comments'      : [row[2], row[4], row[6]]
                 }
 
-    return roleList, gradPreferences
+    return role_list, grad_preferences
 
-def generate_matrix_csv(roleList, gradPreferences, matrix_filename):
+def generate_matrix_csv(role_list, grad_preferences, matrix_filename):
     """
     write grad preference matrix into a csv file
     """
     print('\tgenerating {}'.format(matrix_filename))
     with open(matrix_filename,'w',newline='') as csvfile:
         matrix_writer = csv.writer(csvfile) # open writer
-        matrix_writer.writerow(['3'] + roleList)
+        matrix_writer.writerow(['3'] + role_list)
 
-        gradList = list(gradPreferences.keys())
+        gradList = list(grad_preferences.keys())
         # randomise gradlist to eliminate positional bias in assignment
         random.shuffle(gradList)
 
         for grad in gradList:
-            gradRow = [''] * len(roleList)
+            gradRow = [''] * len(role_list)
             for cost in [0,1,2]:
-                roleColumn = gradPreferences[grad]['preferences'][cost]
-                gradRow[roleColumn] = cost
+                role_column = grad_preferences[grad]['preference_ids'][cost]
+                gradRow[role_column] = cost
             matrix_writer.writerow([grad] + gradRow)
 
 
@@ -88,7 +89,8 @@ def extract_matrix_csv_data(matrix_filename):
     row = next(matrix_reader) # get first row
     roles = row[1:] # get list of roles from first row
     default_cost = int(row[0]) # cost for unspecified roles
-    print('\tdefault cost = {}'.format(default_cost))
+    if default_cost != 3:
+        print('\twarning: default cost = {}, not 3'.format(default_cost))
     grads = []
 
     cost_matrix_raw = []
@@ -143,7 +145,7 @@ def process_assignment_results(	cost_matrix,
 
     return assigned_roles, unassigned_roles
 
-def generate_result_csv(result_filename, assigned_roles,unassigned_roles):
+def generate_result_csv(result_filename, assigned_roles, unassigned_roles, grad_preferences):
     """
     process assignments
     generate results file
@@ -151,15 +153,19 @@ def generate_result_csv(result_filename, assigned_roles,unassigned_roles):
     print('\tgenerating {}'.format(result_filename))
     with open(result_filename,'w',newline='') as csvfile:
         result_writer = csv.writer(csvfile) # open writer
-        result_writer.writerow(['Grad','Cost','Role'])
+        result_writer.writerow(['Grad','Cost','Role','','Other Preferences'])
 
-        costCount = [0, 0, 0, 0]
+        cost_count = [0, 0, 0, 0] # counter for each rank
 
         # write grad and assigned role to line of csv file for each grad
         for grad in sorted(assigned_roles):
             cost,role = assigned_roles[grad]
-            result_writer.writerow([grad,cost,role])
-            costCount[cost] += 1
+            other_preferences = grad_preferences[grad]['preferences']
+            other_preferences.remove(role)
+
+            result_writer.writerow([grad,cost,role,''] + other_preferences)
+
+            cost_count[cost] += 1
 
         # write each unassigned role into line with empty grad and cost field
         for role in unassigned_roles:
@@ -168,5 +174,5 @@ def generate_result_csv(result_filename, assigned_roles,unassigned_roles):
         # write stats
         result_writer.writerow([])
         result_writer.writerow(['cost','count'])
-        for cost in range(len(costCount)):
-            result_writer.writerow([cost,costCount[cost]])
+        for cost in range(len(cost_count)):
+            result_writer.writerow([cost,cost_count[cost]])
