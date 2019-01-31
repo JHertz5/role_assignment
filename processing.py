@@ -2,6 +2,7 @@
 # Author: Jukka Hertzog
 
 import csv
+import random
 import numpy as np
 
 def extract_table_csv_data(table_filename):
@@ -58,7 +59,9 @@ def generate_matrix_csv(roleList, gradPreferences, matrix_filename):
         matrix_writer = csv.writer(csvfile) # open writer
         matrix_writer.writerow(['3'] + roleList)
 
-        gradList = gradPreferences.keys()
+        gradList = list(gradPreferences.keys())
+        # randomise gradlist to eliminate positional bias in assignment
+        random.shuffle(gradList)
 
         for grad in gradList:
             gradRow = [''] * len(roleList)

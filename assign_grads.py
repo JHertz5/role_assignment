@@ -3,21 +3,17 @@ program for assigning graduates to roles using the Hungarian algorithm
 """
 # Author: Jukka Hertzog
 
-#TODO Randomise input order
 #TODO list how many of each choice were selected
-#TODO change input path to fixed and in folder
 #TODO list other choices and comments
-#TODO possible to get unselected roles as well?
-#TODO check matrix validity
 
 import processing
 from scipy.optimize import linear_sum_assignment
 from os import path # for file exists checking
 
-table_filename = '/data/table.csv'
-matrix_filename = '/data/matrix.csv'
-matrixIn_filename = '/data/matrix_in.csv'
-result_filename = '/data/grad_assignments.csv'
+table_filename = './data/table.csv'
+matrix_filename = './data/matrix.csv'
+matrixIn_filename = './data/matrix_in.csv'
+result_filename = './data/grad_assignments.csv'
 
 
 if path.exists(matrixIn_filename):
