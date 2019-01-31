@@ -65,9 +65,9 @@ def generate_matrix_csv(roleList, gradPreferences, matrix_filename):
 
         for grad in gradList:
             gradRow = [''] * len(roleList)
-            for rank in [0,1,2]:
-                roleColumn = gradPreferences[grad]['preferences'][rank]
-                gradRow[roleColumn] = rank
+            for cost in [0,1,2]:
+                roleColumn = gradPreferences[grad]['preferences'][cost]
+                gradRow[roleColumn] = cost
             matrix_writer.writerow([grad] + gradRow)
 
 
@@ -153,11 +153,20 @@ def generate_result_csv(result_filename, assigned_roles,unassigned_roles):
         result_writer = csv.writer(csvfile) # open writer
         result_writer.writerow(['Grad','Cost','Role'])
 
+        costCount = [0, 0, 0, 0]
+
         # write grad and assigned role to line of csv file for each grad
         for grad in sorted(assigned_roles):
             cost,role = assigned_roles[grad]
             result_writer.writerow([grad,cost,role])
+            costCount[cost] += 1
 
         # write each unassigned role into line with empty grad and cost field
         for role in unassigned_roles:
             result_writer.writerow(['','',role])
+
+        # write stats
+        result_writer.writerow([])
+        result_writer.writerow(['cost','count'])
+        for cost in range(len(costCount)):
+            result_writer.writerow([cost,costCount[cost]])
