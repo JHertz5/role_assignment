@@ -56,22 +56,25 @@ def generate_matrix_csv(role_list, grad_preferences, matrix_filename):
     write grad preference matrix into a csv file
     """
     print('\tgenerating {}'.format(matrix_filename))
-    with open(matrix_filename,'w',newline='') as csvfile:
-        matrix_writer = csv.writer(csvfile) # open writer
-        matrix_writer.writerow(['3'] + role_list)
+    try:
+        csvfile = open(matrix_filename,'w',newline='')
+    except PermissionError as e:
+        print('ERROR: {} could not be edited\n\tcheck that it is not open in another application'.
+            format(matrix_filename))
 
-        gradList = list(grad_preferences.keys())
-        # randomise gradlist to eliminate positional bias in assignment
-        random.shuffle(gradList)
+    matrix_writer = csv.writer(csvfile) # open writer
+    matrix_writer.writerow(['3'] + role_list)
 
-        for grad in gradList:
-            gradRow = [''] * len(role_list)
-            for cost in [0,1,2]:
-                role_column = grad_preferences[grad]['preference_ids'][cost]
-                gradRow[role_column] = cost
-            matrix_writer.writerow([grad] + gradRow)
+    gradList = list(grad_preferences.keys())
+    # randomise gradlist to eliminate positional bias in assignment
+    random.shuffle(gradList)
 
-
+    for grad in gradList:
+        gradRow = [''] * len(role_list)
+        for cost in [0,1,2]:
+            role_column = grad_preferences[grad]['preference_ids'][cost]
+            gradRow[role_column] = cost
+        matrix_writer.writerow([grad] + gradRow)
 
 def extract_matrix_csv_data(matrix_filename):
     """
@@ -151,28 +154,40 @@ def generate_result_csv(result_filename, assigned_roles, unassigned_roles, grad_
     generate results file
     """
     print('\tgenerating {}'.format(result_filename))
-    with open(result_filename,'w',newline='') as csvfile:
-        result_writer = csv.writer(csvfile) # open writer
+    try:
+        csvfile = open(result_filename,'w',newline='')
+    except PermissionError as e:
+        print('ERROR: {} could not be edited\n\tcheck that it is not open in another application'.
+            format(result_filename))
+
+    result_writer = csv.writer(csvfile) # open writer
+    if grad_preferences == None:
+        result_writer.writerow(['Grad','Cost','Role','Other Preferences currently unsupported from matrix only processing'])
+    else:
         result_writer.writerow(['Grad','Cost','Role','','Other Preferences'])
 
-        cost_count = [0, 0, 0, 0] # counter for each rank
+    cost_count = [0, 0, 0, 0] # counter for each rank
 
-        # write grad and assigned role to line of csv file for each grad
-        for grad in sorted(assigned_roles):
-            cost,role = assigned_roles[grad]
+    # write grad and assigned role to line of csv file for each grad
+    for grad in sorted(assigned_roles):
+        cost,role = assigned_roles[grad]
+
+        if grad_preferences == None:
+            result_writer.writerow([grad,cost,role])
+        else:
             other_preferences = grad_preferences[grad]['preferences']
             other_preferences.remove(role)
 
             result_writer.writerow([grad,cost,role,''] + other_preferences)
 
-            cost_count[cost] += 1
+        cost_count[cost] += 1
 
-        # write each unassigned role into line with empty grad and cost field
-        for role in unassigned_roles:
-            result_writer.writerow(['','',role])
+    # write each unassigned role into line with empty grad and cost field
+    for role in unassigned_roles:
+        result_writer.writerow(['','',role])
 
-        # write stats
-        result_writer.writerow([])
-        result_writer.writerow(['cost','count'])
-        for cost in range(len(cost_count)):
-            result_writer.writerow([cost,cost_count[cost]])
+    # write stats
+    result_writer.writerow([])
+    result_writer.writerow(['cost','count'])
+    for cost in range(len(cost_count)):
+        result_writer.writerow([cost,cost_count[cost]])
