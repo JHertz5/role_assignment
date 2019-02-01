@@ -4,7 +4,6 @@ program for assigning graduates to roles using the Hungarian algorithm
 # Author: Jukka Hertzog
 
 #TODO alternate randomness solution - test coparison of one normal and one reversed
-#TODO remove unassigned roles, replace with already existing roles
 
 import processing
 from scipy.optimize import linear_sum_assignment
@@ -32,21 +31,17 @@ processing.check_cost_matrix_validity(cost_matrix,grad_list)
 # perform assignment
 grad_idx,role_idx = linear_sum_assignment(cost_matrix)
 
-assignments,unassigned_roles = processing.process_assignment_results(
+assignments = processing.process_assignment_results(
     cost_matrix, grad_list, grad_idx,
     role_list,
     role_idx
 )
 
-print(results)
-print()
-print(assignments)
-
 # generate output file
 processing.generate_result_csv(
     result_filename,
     assignments,
-    unassigned_roles,
+    role_list,
     grad_preferences
     )
 print('{} generated'.format(result_filename))
