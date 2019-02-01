@@ -153,24 +153,19 @@ def process_assignment_results(	cost_matrix,
     # have results as only output, find unassigned_roles while processing outputs
 
     # find assigned grad-role pairs and their associated costs
-    assigned_roles = {}
-    results = {}
+    assignments = {}
 
     for grad_index,role_index in zip(grad_indexes,role_indexes):
         cost = cost_matrix[grad_index, role_index] # cost of assigned role
-        assigned_roles[grad_list[grad_index]] = (cost,role_list[role_index])
-        results[grad_list[grad_index]] = {
-            'assigned_role' : role_list[role_index],
-            'assignment_cost' : cost
-        }
+        assignments[grad_list[grad_index]] = (cost,role_list[role_index])
 
     # find unassigned roles
     unassigned_role_indexes = set(range(len(role_list))).difference(role_indexes)
     unassigned_roles = [role_list[index] for index in list(unassigned_role_indexes)]
 
-    return assigned_roles, unassigned_roles, results
+    return assignments, unassigned_roles
 
-def generate_result_csv(result_filename, assigned_roles, unassigned_roles, grad_preferences):
+def generate_result_csv(result_filename, assignments, unassigned_roles, grad_preferences):
     """
     process assignments
     generate results file
@@ -189,8 +184,8 @@ def generate_result_csv(result_filename, assigned_roles, unassigned_roles, grad_
     cost_count = [0, 0, 0, 0] # counter for each rank
 
     # write grad and assigned role to line of csv file for each grad
-    for grad in sorted(assigned_roles):
-        cost,role = assigned_roles[grad]
+    for grad in sorted(assignments):
+        cost,role = assignments[grad]
 
         other_preferences = [ x if x != role else ' ' for x in grad_preferences[grad]]
         result_writer.writerow([grad,cost,role,' '] + other_preferences)
