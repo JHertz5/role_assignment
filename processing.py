@@ -180,11 +180,9 @@ def generate_result_csv(result_filename, assigned_roles, unassigned_roles, grad_
         if grad_preferences == None:
             result_writer.writerow([grad,cost,role])
         else:
-            other_preferences = grad_preferences[grad]['preferences']
-            if role in other_preferences:
-                other_preferences.remove(role)
-
-            result_writer.writerow([grad,cost,role,''] + other_preferences)
+            other_preferences = [ x if x != role else ' ' for x in grad_preferences[grad]['preferences'] ]
+            
+            result_writer.writerow([grad,cost,role,' '] + other_preferences)
 
         cost_count[cost] += 1
 
