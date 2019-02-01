@@ -32,7 +32,7 @@ processing.check_cost_matrix_validity(cost_matrix,grad_list)
 # perform assignment
 grad_idx,role_idx = linear_sum_assignment(cost_matrix)
 
-assigned_roles,unassigned_roles = processing.process_assignment_results(
+assignments,unassigned_roles = processing.process_assignment_results(
     cost_matrix, grad_list, grad_idx,
     role_list,
     role_idx
@@ -40,12 +40,12 @@ assigned_roles,unassigned_roles = processing.process_assignment_results(
 
 print(results)
 print()
-print(assigned_roles)
+print(assignments)
 
 # generate output file
 processing.generate_result_csv(
     result_filename,
-    assigned_roles,
+    assignments,
     unassigned_roles,
     grad_preferences
     )
