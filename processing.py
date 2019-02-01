@@ -2,6 +2,7 @@
 # Author: Jukka Hertzog
 
 import csv
+import sys
 import random
 import numpy as np
 
@@ -15,6 +16,7 @@ def extract_table_csv_data(table_filename):
         csvfile = open(table_filename,newline='')
     except FileNotFoundError as e:
         print('Error: {} not found'.format(table_filename))
+        sys.exit()
 
     table_reader = csv.reader(csvfile)
 
@@ -61,6 +63,7 @@ def generate_matrix_csv(role_list, grad_preferences, matrix_filename):
     except PermissionError as e:
         print('ERROR: {} could not be edited\n\tcheck that it is not open in another application'.
             format(matrix_filename))
+        sys.exit()
 
     matrix_writer = csv.writer(csvfile) # open writer
     matrix_writer.writerow(['3'] + role_list)
@@ -86,6 +89,7 @@ def extract_matrix_csv_data(matrix_filename):
         csvfile = open(matrix_filename,newline='')
     except FileNotFoundError as e:
         print('ERROR: {} not found'.format(matrix_filename))
+        sys.exit()
 
     matrix_reader = csv.reader(csvfile)
 
@@ -159,6 +163,7 @@ def generate_result_csv(result_filename, assigned_roles, unassigned_roles, grad_
     except PermissionError as e:
         print('ERROR: {} could not be edited\n\tcheck that it is not open in another application'.
             format(result_filename))
+        sys.exit()
 
     result_writer = csv.writer(csvfile) # open writer
     if grad_preferences == None:
@@ -176,7 +181,8 @@ def generate_result_csv(result_filename, assigned_roles, unassigned_roles, grad_
             result_writer.writerow([grad,cost,role])
         else:
             other_preferences = grad_preferences[grad]['preferences']
-            other_preferences.remove(role)
+            if role in other_preferences:
+                other_preferences.remove(role)
 
             result_writer.writerow([grad,cost,role,''] + other_preferences)
 
