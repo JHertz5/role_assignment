@@ -20,7 +20,6 @@ if path.exists(matrix_in_filename):
     # if matrix input file exists, skip sharepoint
     matrix_filename = matrix_in_filename
     print('skipping table input and using {} as matrix input'.format(matrix_in_filename))
-    grad_preference_form_data = None
 else:
     # process raw input data and generate matrix file
     role_list, grad_preference_form_data = processing.extract_table_csv_data(table_filename)

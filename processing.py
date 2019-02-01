@@ -184,10 +184,7 @@ def generate_result_csv(result_filename, assigned_roles, unassigned_roles, grad_
         sys.exit()
 
     result_writer = csv.writer(csvfile) # open writer
-    if grad_preferences == None:
-        result_writer.writerow(['Grad','Cost','Role','Other Preferences currently unsupported from matrix only processing'])
-    else:
-        result_writer.writerow(['Grad','Cost','Role','','Other Preferences'])
+    result_writer.writerow(['Grad','Cost','Role','','Other Preferences'])
 
     cost_count = [0, 0, 0, 0] # counter for each rank
 
@@ -195,11 +192,8 @@ def generate_result_csv(result_filename, assigned_roles, unassigned_roles, grad_
     for grad in sorted(assigned_roles):
         cost,role = assigned_roles[grad]
 
-        if grad_preferences == None:
-            result_writer.writerow([grad,cost,role])
-        else:
-            other_preferences = [ x if x != role else ' ' for x in grad_preferences[grad]]
-            result_writer.writerow([grad,cost,role,' '] + other_preferences)
+        other_preferences = [ x if x != role else ' ' for x in grad_preferences[grad]]
+        result_writer.writerow([grad,cost,role,' '] + other_preferences)
 
         cost_count[cost] += 1
 
