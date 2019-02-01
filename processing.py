@@ -20,15 +20,15 @@ def extract_table_csv_data(table_filename):
 
     table_reader = csv.reader(csvfile)
 
-    roleSet = set()
+    role_set = set()
 
     # get roles from table
     next(table_reader) # skip first row
     for row in table_reader:
         if row[0] != '':
             for role_column in [1, 3, 5]: # pick from columns with roles listed
-                roleSet.add(row[role_column])
-    role_list = list(roleSet)
+                role_set.add(row[role_column])
+    role_list = list(role_set)
     role_list.sort()
 
     # reset table_reader to start of file
@@ -36,12 +36,12 @@ def extract_table_csv_data(table_filename):
     table_reader = csv.reader(csvfile)
 
     next(table_reader) # skip first row
-    grad_preferences = {}
+    grad_preference_form_data = {}
 
     for row in table_reader:
         grad = row[0]
         if grad != '':
-            grad_preferences[grad] = {
+            grad_preference_form_data[grad] = {
                     'preference_ids'   : [
                         role_list.index(row[1]),
                         role_list.index(row[3]),
@@ -51,9 +51,9 @@ def extract_table_csv_data(table_filename):
                     'comments'      : [row[2], row[4], row[6]]
                 }
 
-    return role_list, grad_preferences
+    return role_list, grad_preference_form_data
 
-def generate_matrix_csv(role_list, grad_preferences, matrix_filename):
+def generate_matrix_csv(role_list, grad_preference_form_data, matrix_filename):
     """
     write grad preference matrix into a csv file
     """
@@ -68,14 +68,14 @@ def generate_matrix_csv(role_list, grad_preferences, matrix_filename):
     matrix_writer = csv.writer(csvfile) # open writer
     matrix_writer.writerow(['3'] + role_list)
 
-    gradList = list(grad_preferences.keys())
+    gradList = list(grad_preference_form_data.keys())
     # randomise gradlist to eliminate positional bias in assignment
     random.shuffle(gradList)
 
     for grad in gradList:
         gradRow = [''] * len(role_list)
         for cost in [0,1,2]:
-            role_column = grad_preferences[grad]['preference_ids'][cost]
+            role_column = grad_preference_form_data[grad]['preference_ids'][cost]
             gradRow[role_column] = cost
         matrix_writer.writerow([grad] + gradRow)
 
@@ -94,22 +94,31 @@ def extract_matrix_csv_data(matrix_filename):
     matrix_reader = csv.reader(csvfile)
 
     row = next(matrix_reader) # get first row
-    roles = row[1:] # get list of roles from first row
+    role_list = row[1:] # get list of roles from first row
     default_cost = int(row[0]) # cost for unspecified roles
     if default_cost != 3:
         print('\twarning: default cost = {}, not 3'.format(default_cost))
-    grads = []
+    grad_list = []
 
     cost_matrix_raw = []
 
+    grad_preferences = {}
+
     for row in matrix_reader:
-        grads.append(row[0])
+        #TODO get preference data
+        grad = row[0]
+        grad_preferences[grad] = ['','','']
+        for cost in [0,1,2]:
+            cost_column = row.index(str(cost))
+            grad_preferences[grad][cost] = role_list[cost_column-1] # role_list skips first column
+
+        grad_list.append(grad)
         cost_matrix_raw.append([default_cost if x is '' else int(x) for x in row[1:]])
 
     cost_matrix = np.array(cost_matrix_raw) # convert cost_matrix into ndarray
-    return grads,roles,cost_matrix
+    return grad_list, role_list, cost_matrix, grad_preferences
 
-def check_cost_matrix_validity(cost_matrix,grads):
+def check_cost_matrix_validity(cost_matrix,grad_list):
     """
     perform checks on cost matrix to provide warnings if:
     - values outside of expected range
@@ -121,7 +130,7 @@ def check_cost_matrix_validity(cost_matrix,grads):
        # check for non standard value
         for index,cell in enumerate(row):
             if cell not in (0,1,2,3): # try range(0,4)
-               print('WARNING: row {} contains unexpected value {}'.format(grads[row_index],cell))
+               print('WARNING: row {} contains unexpected value {}'.format(grad_list[row_index],cell))
 
         unique,counts = np.unique(row,return_counts=True)
         row_count = dict(zip(unique,counts))
@@ -129,28 +138,37 @@ def check_cost_matrix_validity(cost_matrix,grads):
         # check for duplicates of 0,1,2 in rows
         for cost in (0,1,2):
             if row_count.get(cost,0) != 1:
-                print('WARNING: row {} does not contain exactly 1 {}'.format(grads[row_index],cost))
+                print('WARNING: row {} does not contain exactly 1 {}'.format(grad_list[row_index],cost))
 
 def process_assignment_results(	cost_matrix,
-                                grads, grad_indexes,
-                                roles, role_indexes
+                                grad_list, grad_indexes,
+                                role_list, role_indexes
                                 ):
     """
     combine results into list of tuples for easy data access
     also produces list of leftover roles
     """
 
+    #TODO remove unassigned_roles and unassigned_roles
+    # have results as only output, find unassigned_roles while processing outputs
+
     # find assigned grad-role pairs and their associated costs
     assigned_roles = {}
+    results = {}
+
     for grad_index,role_index in zip(grad_indexes,role_indexes):
         cost = cost_matrix[grad_index, role_index] # cost of assigned role
-        assigned_roles[grads[grad_index]] = (cost,roles[role_index])
+        assigned_roles[grad_list[grad_index]] = (cost,role_list[role_index])
+        results[grad_list[grad_index]] = {
+            'assigned_role' : role_list[role_index],
+            'assignment_cost' : cost
+        }
 
     # find unassigned roles
-    unassigned_role_indexes = set(range(len(roles))).difference(role_indexes)
-    unassigned_roles = [roles[index] for index in list(unassigned_role_indexes)]
+    unassigned_role_indexes = set(range(len(role_list))).difference(role_indexes)
+    unassigned_roles = [role_list[index] for index in list(unassigned_role_indexes)]
 
-    return assigned_roles, unassigned_roles
+    return assigned_roles, unassigned_roles, results
 
 def generate_result_csv(result_filename, assigned_roles, unassigned_roles, grad_preferences):
     """
@@ -180,8 +198,7 @@ def generate_result_csv(result_filename, assigned_roles, unassigned_roles, grad_
         if grad_preferences == None:
             result_writer.writerow([grad,cost,role])
         else:
-            other_preferences = [ x if x != role else ' ' for x in grad_preferences[grad]['preferences'] ]
-            
+            other_preferences = [ x if x != role else ' ' for x in grad_preferences[grad]]
             result_writer.writerow([grad,cost,role,' '] + other_preferences)
 
         cost_count[cost] += 1

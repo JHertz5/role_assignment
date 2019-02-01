@@ -3,6 +3,10 @@ program for assigning graduates to roles using the Hungarian algorithm
 """
 # Author: Jukka Hertzog
 
+#TODO alternate randomness solution - test coparison of one normal and one reversed
+#TODO pull grad preferences from matrix instead of table for result
+#TODO remove unassigned roles, replace with already existing roles
+
 import processing
 from scipy.optimize import linear_sum_assignment
 from os import path # for file exists checking
@@ -16,24 +20,24 @@ if path.exists(matrix_in_filename):
     # if matrix input file exists, skip sharepoint
     matrix_filename = matrix_in_filename
     print('skipping table input and using {} as matrix input'.format(matrix_in_filename))
-    grad_preferences = None # TODO pull grad preferences from matrix instead of table for result
+    grad_preference_form_data = None
 else:
     # process raw input data and generate matrix file
-    role_list, grad_preferences = processing.extract_table_csv_data(table_filename)
-    processing.generate_matrix_csv(role_list, grad_preferences, matrix_filename)
+    role_list, grad_preference_form_data = processing.extract_table_csv_data(table_filename)
+    processing.generate_matrix_csv(role_list, grad_preference_form_data, matrix_filename)
 
 # process matrix file and extract data
-grads, roles, cost_matrix = processing.extract_matrix_csv_data(matrix_filename)
+grad_list, role_list, cost_matrix, grad_preferences = processing.extract_matrix_csv_data(matrix_filename)
 
-processing.check_cost_matrix_validity(cost_matrix,grads)
+processing.check_cost_matrix_validity(cost_matrix,grad_list)
 
 # perform assignment
 grad_idx,role_idx = linear_sum_assignment(cost_matrix)
 
-assigned_roles,unassigned_roles = processing.process_assignment_results(
-    cost_matrix,
-    grads,grad_idx,
-    roles,role_idx
+assigned_roles,unassigned_roles, results = processing.process_assignment_results(
+    cost_matrix, grad_list, grad_idx,
+    role_list,
+    role_idx
     )
 
 # generate output file
