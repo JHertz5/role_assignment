@@ -6,6 +6,9 @@ import sys
 import random
 import numpy as np
 
+# TODO make try excepts into functions, returning csv.reader
+# TODO remove  as e from except statements
+
 def extract_table_csv_data(table_filename):
     """
     read table csv file
@@ -52,6 +55,75 @@ def extract_table_csv_data(table_filename):
                 }
 
     return role_list, grad_preference_form_data
+
+
+def process_clone(clone_title, clone_titles):
+    """
+    add clone role to clone list and return clone id
+    """
+    if clone_title not in clone_titles:
+        print(clone_title)
+        clone_titles.append(clone_title)
+    clone_id = clone_titles.index(clone_title)
+    return clone_id,clone_titles
+
+def extract_role_csv_data(roles_filename):
+    """
+    read role titles from csv file
+    """
+    print('\treading {}'.format(roles_filename))
+    try:
+        csvfile = open(roles_filename,newline='')
+    except FileNotFoundError as e:
+        print('Error: {} not found'.format(roles_filename))
+        sys.exit()
+
+    role_reader = csv.reader(csvfile)
+
+    clone_str = ' - Placement '
+    clone_str_idx1 = -(len(clone_str)+1)
+
+    role_data = {}
+    clone_titles = []
+
+    for row_id,row in enumerate(role_reader):
+        if row[0] != '':
+            role_title = row[0]
+
+            # detect and process ' - Placement n' clones
+            if (role_title[clone_str_idx1:-1] == clone_str and 
+                                        role_title[-1].isdigit()):
+                clone_title = role_title[:clone_str_idx1]
+                clone_id,clone_titles = process_clone(clone_title,clone_titles)
+
+            # detect and process '(n)' clones
+            elif (role_title[-3] == '(' and role_title[-2].isdigit() and 
+                                                    role_title[-1] == ')'):
+                clone_title = role_title[:-3]
+                clone_id,clone_titles = process_clone(clone_title,clone_titles)
+
+            else:
+                clone_id = None
+            
+            role_data[role_title] = {
+                'id' : row_id,
+                'clone' : clone_id
+            }
+
+    return role_data
+    
+
+
+
+
+
+
+
+
+
+
+
+
 
 def generate_matrix_csv(role_list, grad_preference_form_data, matrix_filename):
     """
@@ -199,3 +271,5 @@ def generate_result_csv(result_filename, assignments, role_list, grad_preference
     result_writer.writerow(['cost','count'])
     for cost in range(len(cost_count)):
         result_writer.writerow([cost,cost_count[cost]])
+
+print(extract_role_csv_data('./data/role_titles.csv'))
