@@ -6,8 +6,6 @@ import sys
 import random
 import numpy as np
 
-# TODO make try excepts into functions, returning csv.reader
-
 def extract_table_csv_data(table_filename):
     """
     read table csv file
@@ -55,17 +53,15 @@ def extract_table_csv_data(table_filename):
 
     return role_list, grad_preference_form_data
 
-
-def process_clone(clone_title, clone_titles):
+def process_clone(clone_title, role_id, clone_data):
     """
     add clone role to clone list and return clone id
     """
-    if clone_title not in clone_titles:
-        print(clone_title)
-        clone_titles.append(clone_title)
-        
-    clone_id = clone_titles.index(clone_title)
-    return clone_id,clone_titles
+    if clone_title not in clone_data:
+        clone_data[clone_title] = []
+
+    clone_data[clone_title].append(role_id)
+    return clone_data
 
 def extract_role_csv_data(roles_filename):
     """
@@ -83,36 +79,40 @@ def extract_role_csv_data(roles_filename):
     clone_str = ' - Placement '
     clone_str_idx1 = -(len(clone_str)+1)
 
-    role_data = {}
-    clone_titles = []
+    role_ids = {}
+    role_titles = []
+    clone_data = {} # TODO rename to clone_data
 
-    for row_id,row in enumerate(role_reader):
+    for row in role_reader:
         if row[0] != '':
-            role_title = row[0]
+            role_titles.append(row[0])
 
+    role_titles.sort()
+    for role_id, role_title in enumerate(sorted(role_titles)):
             # detect and process ' - Placement n' clones
             if (role_title[clone_str_idx1:-1] == clone_str and 
                                         role_title[-1].isdigit()):
                 clone_title = role_title[:clone_str_idx1]
-                clone_id,clone_titles = process_clone(clone_title,clone_titles)
+                clone_data = process_clone(clone_title, role_id, clone_data)
 
             # detect and process '(n)' clones
             elif (role_title[-3] == '(' and role_title[-2].isdigit() and 
                                                     role_title[-1] == ')'):
                 clone_title = role_title[:-3]
-                clone_id,clone_titles = process_clone(clone_title,clone_titles)
+                clone_data = process_clone(clone_title, role_id, clone_data)
 
-            else:
-                clone_id = None
-            
-            role_data[role_title] = {
-                'id' : row_id,
-                'clone' : clone_id
-            }
+            # role_id stored as list to accommodate clones
+            role_ids[role_title] = [role_id] 
 
-    return role_data
+    # link clones to fellow clones
+    for clone_title in clone_data:
+        for role_id in clone_data[clone_title]:
+            role_title = role_titles[role_id]
+            role_ids[role_title] = clone_data[clone_title]
 
-def generate_matrix_csv(role_list, grad_preference_form_data, matrix_filename):
+    return role_ids
+
+def generate_matrix_csv(role_list, role_ids, grad_preference_form_data, matrix_filename):
     """
     write grad preference matrix into a csv file
     """
@@ -124,6 +124,8 @@ def generate_matrix_csv(role_list, grad_preference_form_data, matrix_filename):
             format(matrix_filename))
         sys.exit()
 
+    role_list = sorted(role_ids.keys())
+    
     matrix_writer = csv.writer(csvfile) # open writer
     matrix_writer.writerow(['3'] + role_list)
 
@@ -134,8 +136,11 @@ def generate_matrix_csv(role_list, grad_preference_form_data, matrix_filename):
     for grad in gradList:
         gradRow = [''] * len(role_list)
         for cost in [0,1,2]:
-            role_column = grad_preference_form_data[grad]['preference_ids'][cost]
-            gradRow[role_column] = cost
+            role_title = grad_preference_form_data[grad]['preferences'][cost]
+            # role_column = grad_preference_form_data[grad]['preference_ids'][cost]
+            role_id_list = role_ids[role_title]
+            for role_column in role_id_list: 
+                gradRow[role_column] = cost
         matrix_writer.writerow([grad] + gradRow)
 
 def extract_matrix_csv_data(matrix_filename):
@@ -258,5 +263,4 @@ def generate_result_csv(result_filename, assignments, role_list, grad_preference
     result_writer.writerow(['cost','count'])
     for cost in range(len(cost_count)):
         result_writer.writerow([cost,cost_count[cost]])
-
-print(extract_role_csv_data('./data/role_titles.csv'))
+        print('cost {} - {}'.format(cost,cost_count[cost]))
