@@ -7,7 +7,6 @@ import random
 import numpy as np
 
 # TODO make try excepts into functions, returning csv.reader
-# TODO remove  as e from except statements
 
 def extract_table_csv_data(table_filename):
     """
@@ -17,7 +16,7 @@ def extract_table_csv_data(table_filename):
     print('\treading {}'.format(table_filename))
     try:
         csvfile = open(table_filename,newline='')
-    except FileNotFoundError as e:
+    except FileNotFoundError:
         print('Error: {} not found'.format(table_filename))
         sys.exit()
 
@@ -64,6 +63,7 @@ def process_clone(clone_title, clone_titles):
     if clone_title not in clone_titles:
         print(clone_title)
         clone_titles.append(clone_title)
+        
     clone_id = clone_titles.index(clone_title)
     return clone_id,clone_titles
 
@@ -74,7 +74,7 @@ def extract_role_csv_data(roles_filename):
     print('\treading {}'.format(roles_filename))
     try:
         csvfile = open(roles_filename,newline='')
-    except FileNotFoundError as e:
+    except FileNotFoundError:
         print('Error: {} not found'.format(roles_filename))
         sys.exit()
 
@@ -111,19 +111,6 @@ def extract_role_csv_data(roles_filename):
             }
 
     return role_data
-    
-
-
-
-
-
-
-
-
-
-
-
-
 
 def generate_matrix_csv(role_list, grad_preference_form_data, matrix_filename):
     """
@@ -132,7 +119,7 @@ def generate_matrix_csv(role_list, grad_preference_form_data, matrix_filename):
     print('\tgenerating {}'.format(matrix_filename))
     try:
         csvfile = open(matrix_filename,'w',newline='')
-    except PermissionError as e:
+    except PermissionError:
         print('ERROR: {} could not be edited\n\tcheck that it is not open in another application'.
             format(matrix_filename))
         sys.exit()
@@ -159,7 +146,7 @@ def extract_matrix_csv_data(matrix_filename):
     print('\treading {}'.format(matrix_filename))
     try:
         csvfile = open(matrix_filename,newline='')
-    except FileNotFoundError as e:
+    except FileNotFoundError:
         print('ERROR: {} not found'.format(matrix_filename))
         sys.exit()
 
@@ -200,7 +187,7 @@ def check_cost_matrix_validity(cost_matrix,grad_list):
     for row_index,row in enumerate(cost_matrix):
 
        # check for non standard value
-        for index,cell in enumerate(row):
+        for cell in enumerate(row):
             if cell not in (0,1,2,3): # try range(0,4)
                print('WARNING: row {} contains unexpected value {}'.format(grad_list[row_index],cell))
 
@@ -238,7 +225,7 @@ def generate_result_csv(result_filename, assignments, role_list, grad_preference
     print('\tgenerating {}'.format(result_filename))
     try:
         csvfile = open(result_filename,'w',newline='')
-    except PermissionError as e:
+    except PermissionError:
         print('ERROR: {} could not be edited\n\tcheck that it is not open in another application'.
             format(result_filename))
         sys.exit()
