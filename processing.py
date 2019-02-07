@@ -75,10 +75,11 @@ def extract_role_csv_data(roles_filename):
 
     for role_id, role_title in enumerate(sorted(role_titles)):
         # detect and process ' - Placement n' clones
-        if (role_title[clone_str_idx1:-1] == clone_str and 
+        if len(role_title) > clone_str_idx1:
+            if (role_title[clone_str_idx1:-1] == clone_str and 
                                     role_title[-1].isdigit()):
-            clone_title = role_title[:clone_str_idx1]
-            clone_data = process_clone(clone_title, role_id, clone_data)
+                clone_title = role_title[:clone_str_idx1]
+                clone_data = process_clone(clone_title, role_id, clone_data)
 
         # detect and process '(n)' clones
         elif (role_title[-3] == '(' and role_title[-2].isdigit() and 
