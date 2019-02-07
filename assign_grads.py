@@ -21,9 +21,9 @@ if path.exists(matrix_in_filename):
     print('skipping table input and using {} as matrix input'.format(matrix_in_filename))
 else:
     # process raw input data and generate matrix file
-    role_list, grad_preference_form_data = processing.extract_table_csv_data(table_filename)
+    grad_preference_form_data = processing.extract_table_csv_data(table_filename)
     role_ids = processing.extract_role_csv_data(roles_filename)
-    processing.generate_matrix_csv(role_list, role_ids, grad_preference_form_data, matrix_filename)
+    processing.generate_matrix_csv(role_ids, grad_preference_form_data, matrix_filename)
 
 # process matrix file and extract data
 grad_list, role_list, cost_matrix, grad_preferences = processing.extract_matrix_csv_data(matrix_filename)
