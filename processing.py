@@ -67,6 +67,8 @@ def extract_role_csv_data(roles_filename):
     role_titles = []
     clone_data = {}
 
+    next(role_reader) # skip header row
+
     for row in role_reader:
         if row[0] != '':
             role_titles.append(row[0])
