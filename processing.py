@@ -20,10 +20,6 @@ def extract_table_csv_data(table_filename):
 
     table_reader = csv.reader(csvfile)
 
-    # reset table_reader to start of file
-    csvfile.seek(0)
-    table_reader = csv.reader(csvfile)
-
     next(table_reader) # skip first row
     grad_preference_form_data = {}
 
